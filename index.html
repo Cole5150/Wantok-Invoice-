@@ -290,6 +290,10 @@ html,body{height:100%;background:#fff;color:#111;font-family:'DM Sans',sans-seri
           <div class="srow"><span class="sico">🔢</span><div class="slb"><div class="slbl">Your TIN Number</div><input class="sinp" type="text" id="pT" placeholder="9-digit IRC TIN" inputmode="numeric" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9)"></div></div>
           <div class="srow"><span class="sico">📞</span><div class="slb"><div class="slbl">Your Phone</div><input class="sinp" type="tel" id="pP" placeholder="e.g. 7123 4567"></div></div>
           <div class="srow"><span class="sico">✉️</span><div class="slb"><div class="slbl">Your Email (Optional)</div><input class="sinp" type="email" id="pE" placeholder="e.g. you@email.com"></div></div>
+          <div class="srow"><span class="sico">🏦</span><div class="slb"><div class="slbl">Bank Name</div><input class="sinp" type="text" id="pBnk" placeholder="e.g. BSP, Kina Bank, ANZ"></div></div>
+          <div class="srow"><span class="sico">🔑</span><div class="slb"><div class="slbl">Account Name</div><input class="sinp" type="text" id="pAcN" placeholder="e.g. John Wapi"></div></div>
+          <div class="srow"><span class="sico">💳</span><div class="slb"><div class="slbl">Account Number</div><input class="sinp" type="text" id="pAcNo" placeholder="e.g. 1000123456" inputmode="numeric"></div></div>
+          <div class="srow"><span class="sico">📍</span><div class="slb"><div class="slbl">Branch</div><input class="sinp" type="text" id="pBrn" placeholder="e.g. Wewak Branch"></div></div>
         </div>
         <div class="stitle">Invoice Settings</div>
         <div class="scard">
@@ -359,6 +363,10 @@ html,body{height:100%;background:#fff;color:#111;font-family:'DM Sans',sans-seri
     <div class="field"><label>TIN Number</label><input type="text" id="acT" placeholder="9-digit IRC TIN" inputmode="numeric" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9)"></div>
     <div class="field"><label>Phone</label><input type="tel" id="acP" placeholder="e.g. 7123 4567" inputmode="numeric"></div>
     <div class="field"><label>Email (Optional)</label><input type="email" id="acE" placeholder="e.g. john@email.com"></div>
+    <div class="field"><label>Bank Name</label><input type="text" id="acBnk" placeholder="e.g. BSP, Kina Bank, ANZ"></div>
+    <div class="field"><label>Account Name</label><input type="text" id="acAcN" placeholder="e.g. John Wapi"></div>
+    <div class="field"><label>Account Number</label><input type="text" id="acAcNo" placeholder="e.g. 1000123456" inputmode="numeric"></div>
+    <div class="field"><label>Branch</label><input type="text" id="acBrn" placeholder="e.g. Wewak Branch"></div>
     <button class="btn-sav" onclick="saveAC()">Save Contractor</button>
   </div>
 </div>
@@ -546,7 +554,7 @@ function saveAC(){
   if(!n){toast('Enter contractor name');return;}
   if(!t){toast('Enter contractor TIN');return;}
   if(t.length!==9){toast('TIN must be exactly 9 digits');return;}
-  var c={id:Date.now(),name:n,business:document.getElementById('acB').value.trim(),tin:t,phone:document.getElementById('acP').value.trim(),email:document.getElementById('acE').value.trim()};
+  var c={id:Date.now(),name:n,business:document.getElementById('acB').value.trim(),tin:t,phone:document.getElementById('acP').value.trim(),email:document.getElementById('acE').value.trim(),bank:document.getElementById('acBnk').value.trim(),acName:document.getElementById('acAcN').value.trim(),acNo:document.getElementById('acAcNo').value.trim(),branch:document.getElementById('acBrn').value.trim()};
   ctrs.unshift(c);
   localStorage.setItem('wi_ctrs',JSON.stringify(ctrs));
   closeAC(); selCt(c.id);
@@ -716,8 +724,9 @@ function exportAll(){
 function buildFromTo(inv){
   var c=inv.ctr||{};
   var fn=c.name||'(Your Name)'; var fb=c.business||''; var ft=c.tin||'(TIN)'; var fp=c.phone||''; var fe=c.email||'';
+  var fbank=c.bank||''; var facName=c.acName||''; var facNo=c.acNo||''; var fbranch=c.branch||'';
   var lab=(inv.base||0)-(inv.mat||0);
-  return {fn:fn,fb:fb,ft:ft,fp:fp,fe:fe,lab:lab};
+  return {fn:fn,fb:fb,ft:ft,fp:fp,fe:fe,fbank:fbank,facName:facName,facNo:facNo,fbranch:fbranch,lab:lab};
 }
 
 function renderDoc(inv){
@@ -746,7 +755,8 @@ function renderDoc(inv){
     '</tbody></table>'+
     '<div class="igw"><div class="igr"><span class="igl">GST (10%)</span><span class="igv">'+kx(inv.gst)+'</span></div></div>'+
     '<div class="itr"><span class="itl">Total Amount Due</span><span class="itv">'+kx(inv.total)+'</span></div>'+
-    '<div class="ipb"><div class="ipt">Payment Terms</div><div class="ipx">Payment due immediately upon receipt. Reference <strong>'+inv.num+'</strong>. TIN: '+x.ft+'</div></div>'+
+    '<div class="ipb"><div class="ipt">Payment Terms</div><div class="ipx">Payment due immediately upon receipt. Reference <strong>'+inv.num+'</strong>. TIN: '+x.ft+
+    (x.fbank?'<br><br><strong>Bank Payment Details:</strong><br>Bank: '+x.fbank+(x.fbranch?' — '+x.fbranch:'')+(x.facName?'<br>Account Name: '+x.facName:'')+(x.facNo?'<br>Account Number: '+x.facNo:''):'')+'</div></div>'+
     '<div class="idc">This invoice was prepared based on information provided by the client. The client is responsible for accuracy of all details submitted to the IRC. PNG Income Tax Act 2026.</div>'+
     '</div>';
 }
@@ -796,7 +806,8 @@ function buildPrintHTML(inv){
     '</tbody></table>'+
     '<div class="gr"><span class="gl">GST (10%)</span><span class="gv">K '+(inv.gst).toFixed(2)+'</span></div>'+
     '<div class="tr"><span class="tl">Total Amount Due</span><span class="tv">K '+(inv.total).toFixed(2)+'</span></div>'+
-    '<div class="py"><div class="pyt">Payment Terms</div><div class="pyb">Payment due immediately upon receipt. Reference <b>'+inv.num+'</b>. TIN: '+x.ft+'</div></div>'+
+    '<div class="py"><div class="pyt">Payment Terms</div><div class="pyb">Payment due immediately upon receipt. Reference <b>'+inv.num+'</b>. TIN: '+x.ft+
+    (x.fbank?'<br><br><b>Bank Payment Details:</b><br>Bank: '+x.fbank+(x.fbranch?' — '+x.fbranch:'')+(x.facName?'<br>Account Name: '+x.facName:'')+(x.facNo?'<br>Account Number: '+x.facNo:''):'')+'</div></div>'+
     '<div class="dc">This invoice was prepared based on information provided by the client. The client is responsible for accuracy of all details submitted to the IRC. PNG Income Tax Act 2026.</div>';
   return {css:css,body:body};
 }
@@ -825,8 +836,9 @@ function copyInv(){
   if(draft.mat>0) t+='Materials:        K '+draft.mat.toFixed(2)+'\n';
   t+='Labour Service:   K '+x.lab.toFixed(2)+'\nGST (10%):        K '+draft.gst.toFixed(2)+'\n';
   t+=Array(37).join('-')+'\nTOTAL AMOUNT DUE: K '+draft.total.toFixed(2)+'\n\n';
-  t+='PAYMENT TERMS\nDue immediately upon receipt.\nReference: '+draft.num+'\nTIN: '+x.ft+'\n\n';
-  t+='This invoice was prepared based on information provided by the client. PNG Income Tax Act 2026.';
+  t+='PAYMENT TERMS\nDue immediately upon receipt.\nReference: '+draft.num+'\nTIN: '+x.ft+'\n';
+  if(x.fbank){ t+='\nBANK PAYMENT DETAILS\nBank: '+x.fbank+(x.fbranch?' — '+x.fbranch:'')+'\n'; if(x.facName) t+='Account Name: '+x.facName+'\n'; if(x.facNo) t+='Account Number: '+x.facNo+'\n'; }
+  t+='\nThis invoice was prepared based on information provided by the client. PNG Income Tax Act 2026.';
   navigator.clipboard.writeText(t).then(function(){ saveInv(draft); toast('Copied! Paste into WhatsApp'); }).catch(function(){ toast('Copy failed — use Print instead'); });
 }
 
@@ -863,17 +875,31 @@ function renderClients(){
 
 // PROFILE
 function loadProf(){
-  if(prof.name) document.getElementById('pN').value=prof.name;
+  if(prof.name)   document.getElementById('pN').value=prof.name;
   document.getElementById('pB').value=prof.business||'Wantok Systems Limited';
-  if(prof.tin)   document.getElementById('pT').value=prof.tin;
-  if(prof.phone) document.getElementById('pP').value=prof.phone;
-  if(prof.email) document.getElementById('pE').value=prof.email;
+  if(prof.tin)    document.getElementById('pT').value=prof.tin;
+  if(prof.phone)  document.getElementById('pP').value=prof.phone;
+  if(prof.email)  document.getElementById('pE').value=prof.email;
+  if(prof.bank)   document.getElementById('pBnk').value=prof.bank;
+  if(prof.acName) document.getElementById('pAcN').value=prof.acName;
+  if(prof.acNo)   document.getElementById('pAcNo').value=prof.acNo;
+  if(prof.branch) document.getElementById('pBrn').value=prof.branch;
 }
 
 function savePro(){
   var t=document.getElementById('pT').value.trim();
   if(t&&t.length!==9){ toast('Your TIN must be exactly 9 digits'); return; }
-  prof={name:document.getElementById('pN').value.trim(),business:document.getElementById('pB').value.trim()||'Wantok Systems Limited',tin:t,phone:document.getElementById('pP').value.trim(),email:document.getElementById('pE').value.trim()};
+  prof={
+    name:    document.getElementById('pN').value.trim(),
+    business:document.getElementById('pB').value.trim()||'Wantok Systems Limited',
+    tin:t,
+    phone:   document.getElementById('pP').value.trim(),
+    email:   document.getElementById('pE').value.trim(),
+    bank:    document.getElementById('pBnk').value.trim(),
+    acName:  document.getElementById('pAcN').value.trim(),
+    acNo:    document.getElementById('pAcNo').value.trim(),
+    branch:  document.getElementById('pBrn').value.trim()
+  };
   localStorage.setItem('wi_prof',JSON.stringify(prof));
   loadProf();
   toast('Profile saved — legally synced to device ✓');
