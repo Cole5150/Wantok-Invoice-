@@ -228,8 +228,8 @@ html,body{height:100%;background:#fff;color:#111;font-family:'DM Sans',sans-seri
 
         <div class="field"><label>Client Name</label><input type="text" id="fCN" placeholder="e.g. Digicel PNG Ltd" autocomplete="off"></div>
         <div class="field">
-          <label>Invoice Year</label>
-          <select id="invYear" onchange="refreshSelBar();refreshNum();" style="width:100%;background:#F7F7F7;border:1px solid #E0E0E0;color:#111;font-family:'DM Sans',sans-serif;font-size:15px;padding:13px 14px;border-radius:10px;outline:none;-webkit-appearance:none;"></select>
+          <label>Invoice Date — defaults to today, change if backdating</label>
+          <input type="date" id="invDate" onchange="refreshSelBar();refreshNum();" style="width:100%;background:#F7F7F7;border:1px solid #E0E0E0;color:#111;font-family:'DM Sans',sans-serif;font-size:15px;padding:13px 14px;border-radius:10px;outline:none;-webkit-appearance:none;">
         </div>
         <div class="field"><label>Client TIN</label><input type="text" id="fCT" placeholder="e.g. 123456789" inputmode="numeric" maxlength="9" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,9)"></div>
         <div class="field"><label>Client Phone</label><input type="tel" id="fCP" placeholder="e.g. 7123 4567" inputmode="numeric"></div>
@@ -385,29 +385,46 @@ var draft = null;
 // INIT
 window.onload = function(){
   loadProf();
-  populateYears();
+  setTodayDate();
   refreshDash();
   refreshNum();
   refreshSelBar();
   go('new');
 };
 
-function populateYears(){
-  var sel = document.getElementById('invYear');
-  if(!sel) return;
-  var cur = new Date().getFullYear();
-  for(var y = 2026; y <= 2050; y++){
-    var opt = document.createElement('option');
-    opt.value = y;
-    opt.textContent = y;
-    if(y === cur) opt.selected = true;
-    sel.appendChild(opt);
-  }
+function setTodayDate(){
+  var el = document.getElementById('invDate');
+  if(!el) return;
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = String(now.getMonth()+1).padStart(2,'0');
+  var d = String(now.getDate()).padStart(2,'0');
+  el.value = y+'-'+m+'-'+d;
 }
 
 function invYr(){
-  var el = document.getElementById('invYear');
-  return el ? parseInt(el.value) : new Date().getFullYear();
+  var el = document.getElementById('invDate');
+  if(!el || !el.value) return new Date().getFullYear();
+  return parseInt(el.value.split('-')[0]);
+}
+
+function getInvDate(){
+  var el = document.getElementById('invDate');
+  if(!el || !el.value) {
+    var now = new Date();
+    return {
+      full: (now.getDate()+' '+['January','February','March','April','May','June','July','August','September','October','November','December'][now.getMonth()]+' '+now.getFullYear()).toUpperCase(),
+      short: now.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()]+' '+now.getFullYear()
+    };
+  }
+  var parts = el.value.split('-');
+  var y=parseInt(parts[0]); var m=parseInt(parts[1])-1; var d=parseInt(parts[2]);
+  var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return {
+    full: (d+' '+MO[m]+' '+y).toUpperCase(),
+    short: d+' '+MS[m]+' '+y
+  };
 }
 
 // NAV
@@ -577,14 +594,10 @@ function genInv(){
   if(!actCt){toast('Tap the green bar to select a contractor first');return;}
   if(ct&&ct.length!==9){toast('Client TIN must be exactly 9 digits');return;}
   var seq=nextSeq(actCt.id); var num=mkNum(seq, actCt);
-  var g=b*0.1; var tot=b+g; var now=new Date();
-  var selYr=invYr();
-  var MO=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  var MS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var dateStr=(now.getDate()+' '+MO[now.getMonth()]+' '+selYr).toUpperCase();
-  var dateShortStr=now.getDate()+' '+MS[now.getMonth()]+' '+selYr;
+  var g=b*0.1; var tot=b+g;
+  var invD=getInvDate();
   draft={id:Date.now(),seq:seq,num:num,ctrId:actCt.id,
-    date:dateStr,dateShort:dateShortStr,
+    date:invD.full, dateShort:invD.short,
     client:cl,ct:ct,cp:cp,ce:ce,desc:d,mat:m,base:b,gst:g,total:tot,
     ctr:Object.assign({},actCt)};
   renderDoc(draft);
@@ -596,6 +609,7 @@ function discard(){
   ['fCN','fCT','fCP','fCE','fD'].forEach(function(i){document.getElementById(i).value='';});
   document.getElementById('fM').value='';
   document.getElementById('fL').value='';
+  setTodayDate();
   calc(); toast('Form cleared');
 }
 
